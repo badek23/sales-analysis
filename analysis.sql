@@ -90,6 +90,7 @@ where company = "company3077";
 select distinct current_lead_status from sales_data;
 
 -- Create average by company of the current_lead_status_date minus the lead_created_date, only for those entries where current_lead_status is Customer 
+-- Note that this chart outputs time to customer in seconds.
 select 
 	company,
 	avg(time_to_customer) as avg_time_to_cust
@@ -157,7 +158,7 @@ where current_opp_status = "Paying";
 -- Expected MRR by month:
 select 
 	billing_period,
-	sum(opportunity_value)
+	sum(opportunity_value) as MRR
 from sales_data
 where current_opp_status = "Paying"
 and billing_period_unit = "month"
@@ -168,25 +169,26 @@ order by billing_period;
 
 -------- 4) Calculate the number of (potential) customers per month up to today
 
--- What qualifies as a "potential" customer?
--- Or is this just the total customers in this potential customers dataset?
+-- What qualifies as a "potential" customer? I am interpreting this as all customers in this dataset
 select * from sales_data;
 
+-- All dates are several years ago, so any filter to focus on customers prior to today will not actually filter anything out.
+select 
+	datetime(current_lead_status_date,"unixepoch"),
+	datetime(status_change_date,"unixepoch"),
+	datetime(lead_created_date,"unixepoch"),
+	datetime(current_opp_status_date,"unixepoch")
+from sales_data;
+
+-- However, I'll include the filter anyway
 select 
 	billing_period,
-	count(*)
+	count(*) as num_customers
 from sales_data 
 where billing_period_unit = "month"
+and current_opp_status_date < unixepoch(current_timestamp)
 group by 1
 order by 1;
-
-
-
-
-
-
-
-
 
 
 
@@ -221,14 +223,21 @@ where old_status_label = "Churned";
 -- 3
 select 
 	billing_period,
-	sum(opportunity_value)
+	sum(opportunity_value) as MRR
 from sales_data
 where current_opp_status = "Paying"
 and billing_period_unit = "month"
-group by 1
-order by 1;
+group by billing_period
+order by billing_period;
 
 -- 4
-
+select 
+	billing_period,
+	count(*) as num_customers
+from sales_data 
+where billing_period_unit = "month"
+and current_opp_status_date < unixepoch(current_timestamp)
+group by 1
+order by 1;
 
 
